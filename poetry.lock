@@ -2448,6 +2448,22 @@ signals = ["blinker (>=1.4.0)"]
 signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
+name = "ollama"
+version = "0.6.3"
+description = "The official Python client for Ollama."
+optional = false
+python-versions = ">=3.8"
+groups = ["main"]
+files = [
+    {file = "ollama-0.6.3-py3-none-any.whl", hash = "sha256:6a20bc42c1a5f889295d7ec490d35e5132fc31f339561530f43a8abd4dbfe508"},
+    {file = "ollama-0.6.3.tar.gz", hash = "sha256:41fc49a8095c4a75939c4c1f8582e4d0671692fb6eac2a5a7ede8c9872b67096"},
+]
+
+[package.dependencies]
+httpx = ">=0.27"
+pydantic = ">=2.9"
+
+[[package]]
 name = "onnxruntime"
 version = "1.30.0"
 description = "ONNX Runtime is a runtime accelerator for Machine Learning models"
@@ -5659,4 +5675,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<3.14"
-content-hash = "e5fc223263bae21430904f08ea19b7abb9ae9e1054683eabd0fabfc1f79bcd5e"
+content-hash = "4db12e9095fa0346dbe0e56f50ffa891e2bbf33dd1e7e0ec78e27b0697892df9"
