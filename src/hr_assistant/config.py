@@ -6,7 +6,7 @@ class Config:
     COLLECTION_NAME = "CVs"
     PERSISTENT_DIR = "data/chromadb" #news
     # Embedding
-    MODEL_NAME = "text-embedding-3-large"
+    MODEL_NAME = "text-embedding-3-small"
     OPENAI_KEY = os.getenv("OPENAI_API_KEY")
     # Completamento
     ### ollama
