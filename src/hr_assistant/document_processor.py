@@ -11,7 +11,7 @@ class DocumentProcessor:
 
     @staticmethod
     def read_first_lines(file_path, n_lines=100):
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             return [line.strip() for line, _ in zip(file, range(n_lines))]
 
     @staticmethod
@@ -39,9 +39,10 @@ class DocumentProcessor:
         metadatas = []
         ids = []
 
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             txt = file.read()
-            sc = SemanticChunking()
+            # sc = SemanticChunking(Config.OPENAI_EMBEDDINGS_KEY, 70, 1)
+            sc = SemanticChunking(70, 1)
             chunks = sc.chunk_text(txt)
             file_metadata = DocumentProcessor.get_document_metadata(file_path)
 
