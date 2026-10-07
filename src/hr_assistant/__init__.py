@@ -6,9 +6,10 @@ from config import Config
 from utils import LLMHelper
 
 db = Database()
+dp = DocumentProcessor()
 
 # Process documents
-added, updated, removed = DocumentProcessor.process_documents(db)
+added, updated, removed = dp.process_documents(db)
 print(f"Document sync complete: {added} added, {updated} updated, {removed} removed")
 
 
@@ -23,7 +24,7 @@ async def on_action(action: cl.Action):
 
 @cl.action_callback("db_reindex")
 async def on_action(action: cl.Action):
-    added, updated, removed = DocumentProcessor.process_documents(db)
+    added, updated, removed = dp.process_documents(db)
     message = f"DB reindicizzato con successo. Document sync complete: {added} added, {updated} updated, {removed} removed"
     await cl.Message(message).send()
 
