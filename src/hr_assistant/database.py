@@ -4,17 +4,22 @@ from custom_embedding import CustomEmbeddingFunction
 
 class Database:
     def __init__(self):
-        # Inizializza la funzione di embedding personalizzata
+        # Funzione di embedding personalizzata
         self.local_ef = CustomEmbeddingFunction()
-        
-        # Inizializza il client persistente di ChromaDB
-        self.client = chromadb.PersistentClient(path=Config.PERSISTENT_DIR)
 
-        # ✅ Ora ChromaDB accetta correttamente la funzione di embedding
+        # Client persistente di ChromaDB
+        self.client = chromadb.PersistentClient(path=Config.PERSISTENT_DIR)
+        self._init_collection()
+
+    def _init_collection(self):
         self.collection = self.client.get_or_create_collection(
             name=Config.COLLECTION_NAME,
-            embedding_function=self.local_ef  # ✅ Funziona perché è un oggetto con __call__()
+            embedding_function=self.local_ef,
         )
+
+    def delete_collection(self):
+        self.client.delete_collection(Config.COLLECTION_NAME)
+        self._init_collection()
 
     def add_documents(self, documents, metadatas, ids):
         self.collection.add(documents=documents, metadatas=metadatas, ids=ids)
