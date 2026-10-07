@@ -13,46 +13,28 @@ dp = DocumentProcessor()
 added, updated, removed = dp.process_documents(db)
 print(f"Document sync complete: {added} added, {updated} updated, {removed} removed")
 
-@cl.set_starters
-async def set_starters():
-    return [
-        cl.Starter(
-            label="Ricerca candidato",
-            message="Cercami un candidato che abbia le competenze di un saldatore",
-            icon="/public/idea.svg",
-        ),
-    ]
 
 @cl.action_callback("db_stats")
 async def on_action(action: cl.Action):
-    pippo = [
-        cl.Action(
-            name="db_stats",
-            icon="mouse-pointer-click",
-            payload={"value": "db_stats"},
-            label="Ricalcola Statistiche Database",
-        ),
-    ]
     # print(action.payload)
     db_info = db.get_stats()
     # print(db_info)
     response = await LLMHelper.get_db_stats(db_info)
-    await cl.Message(content=response,actions=pippo).send()
+    await cl.Message(author="system_assistant", content=response).send()
 
 
 @cl.action_callback("db_reindex")
 async def on_action(action: cl.Action):
+    await cl.Message(author="system_assistant", content="reindicizzazione in corso ...").send()
     added, updated, removed = dp.process_documents(db)
     message = f"DB reindicizzato con successo. Document sync complete: {added} added, {updated} updated, {removed} removed"
-    await cl.Message(message).send()
-
+    await cl.Message(author="system_assistant", content=message).send()
 
 @cl.action_callback("db_remove")
 async def on_action(action: cl.Action):
     db.delete_collection()
     message = f"Il database e' stato completamente rimosso. E' necessario lanciare il reindex."
-    await cl.Message(message).send()
-
+    await cl.Message(author="system_assistant", content=message).send()
 
 @cl.on_chat_start
 async def start():
@@ -78,7 +60,7 @@ async def start():
         ),
     ]
 
-    await cl.Message(content="Informazioni del sistema:", actions=actions).send()
+    await cl.Message(author="system_assistant", content="Informazioni del sistema:", actions=actions).send()
 
     cl.user_session.set(
         "messages",
@@ -93,7 +75,6 @@ async def start():
         ],
     )
 
-
 async def _process_and_index_file(file_path: str, file_name: str) -> str:
     """Elabora e indicizza il documento, restituendo un messaggio di esito."""
     documents, metadatas, ids = dp.process_single_document(file_path)
@@ -102,61 +83,44 @@ async def _process_and_index_file(file_path: str, file_name: str) -> str:
         return f"File '{file_name}' caricato e indicizzato con successo."
     return f"Errore nel processare il file '{file_name}'."
 
-
 async def _file_upload(file) -> str:
     # Salva il file nella directory specificata
     file_name = file.name
-    src_file_path = file.path
     dst_file_path = os.path.join(Config.DOCUMENTS_DIR, file_name)
+    src_file_path = file.path
     os.makedirs(Config.DOCUMENTS_DIR, exist_ok=True)
     shutil.move(src_file_path, dst_file_path)
-
+    
     # processa e indicizza il file
     return await _process_and_index_file(dst_file_path, file_name)
-
+   
 
 @cl.on_message
 async def handle_message(message: cl.Message):
 
     # gestisco l'upload dei file
     if message.elements:
-        print("message.elements", message.elements)
-        await cl.Message(content="Caricamento e indicizzazione documenti").send()
-        
+        await cl.Message(author="system_assistant", content="Caricamento e indicizzazione documenti").send() 
         files = [
-                file
-                for file in message.elements 
-                if file.name.lower().endswith(tuple(DocumentProcessor.SUPPORTED_EXTENSIONS))
-                ]
-        
-        # alternativa tradizionale
-        # files = []
-        # for file in message.elements:
-        #     if file.name.lower().endswith(tuple(DocumentProcessor.SUPPORTED_EXTENSIONS)):
-        #         files.append(file)
-            
+            file 
+            for file in message.elements 
+            if file.name.lower().endswith(tuple(DocumentProcessor.SUPPORTED_EXTENSIONS))
+        ]
+
         # Elaborazione parallela dei file
-        if files:
-            results = [await _file_upload(file)for file in files]
-        else:
-            results = ["Nessun file caricato"]
-        # ["File /blabla.pdf caricato e indicizzato con successo.", "File /blabla2.pdf caricato e indicizzato con successo."]
-        
-        # alternativa tradizionale
-        # results = []
-        # for file in files:
-        #     result = await _file_upload(file)
-        #     results.append(result)
+        results = [await _file_upload(file) for file in files]
 
         result_message = "\n".join(results)
-        await cl.Message(content=result_message).send()
-        await cl.Message(content=f"Caricati {len(files)} file").send()
+        await cl.Message(author="system_assistant", content=result_message).send()        
+        await cl.Message(author="system_assistant", content=f"Caricati {len(files)} file").send()
 
         # (7.2) se c'è solo il file e nessun testo, non c'è nessuna domanda da fare
         if not message.content.strip():
             return
 
+
     # ora interroghiamo il sistema
+
 
     user_question = message.content
 
@@ -176,7 +140,7 @@ async def handle_message(message: cl.Message):
                 "- Prova con parole chiave più specifiche (es. 'developer Python senior')\n"
                 "- Invia una nuova richiesta con dettagli aggiuntivi\n"
             )
-            await cl.Message(content=error_message).send()
+            await cl.Message(author="hr_assistant", content=error_message).send()
             return
 
         filename = results["metadatas"][0][0]["source"]
@@ -196,7 +160,7 @@ async def handle_message(message: cl.Message):
 
         messages.append({"role": "user", "content": prompt})
 
-        response_message = cl.Message(content="")
+        response_message = cl.Message(author="hr_assistant", content="")
         await response_message.send()
 
         try:
@@ -214,7 +178,7 @@ async def handle_message(message: cl.Message):
 
         except Exception as e:
             error_message = f"❌ **Errore interno:** {str(e)}"
-            await cl.Message(content=error_message).send()
+            await cl.Message(author="hr_assistant", content=error_message).send()
             print(error_message)
 
     # 📌 3️⃣ Se l'intenzione è chiedere informazioni su un CV già trovato
@@ -229,7 +193,7 @@ async def handle_message(message: cl.Message):
                 "- 'Mostrami i candidati per sviluppatore Python'\n"
                 "- 'Chi ha esperienza con Kubernetes?'"
             )
-            await cl.Message(content=error_message).send()
+            await cl.Message(author="hr_assistant", content=error_message).send()
             return
 
         # 📌 Chiedi informazioni specifiche sul CV già trovato
@@ -237,7 +201,7 @@ async def handle_message(message: cl.Message):
 
         messages.append({"role": "user", "content": prompt})
 
-        response_message = cl.Message(content="")
+        response_message = cl.Message(author="hr_assistant", content="")
         await response_message.send()
 
         try:
@@ -253,11 +217,11 @@ async def handle_message(message: cl.Message):
 
         except Exception as e:
             error_message = f"❌ **Errore interno:** {str(e)}"
-            await cl.Message(content=error_message).send()
+            await cl.Message(author="hr_assistant", content=error_message).send()
             print(error_message)
 
     else:
-        await cl.Message(content="❌ Non ho capito la tua richiesta. Puoi riformularla?").send()
+        await cl.Message(author="hr_assistant", content="❌ Non ho capito la tua richiesta. Puoi riformularla?").send()
 
     # 📌 Salva lo stato della conversazione
     cl.user_session.set("messages", messages)
